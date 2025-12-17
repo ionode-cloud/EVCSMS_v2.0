@@ -18,7 +18,7 @@ const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
     if (!isCharging) return; // STOP API calls before start
 
     try {
-      const res = await fetch("http://localhost:38923/stations");
+      const res = await fetch("https://evcsms-v2-0.onrender.com/stations");
       const data = await res.json();
       const live = data.find((s) => s._id === station._id);
 
