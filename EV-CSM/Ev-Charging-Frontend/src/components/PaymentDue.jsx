@@ -10,7 +10,7 @@ const PaymentDue = ({ setScreen, sessionData, setBalance, history, setHistory })
       }
 
       // Create Razorpay order
-      const response = await fetch("http://localhost:38923/create-order", {
+      const response = await fetch("https://evcsms-v2-0.onrender.com/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: Number(sessionData.cost) }),
@@ -27,7 +27,7 @@ const PaymentDue = ({ setScreen, sessionData, setBalance, history, setHistory })
         description: "Charging Session Payment",
         order_id: data.orderId,
         handler: async (res) => {
-          const verifyRes = await fetch("http://localhost:38923/verify-payment", {
+          const verifyRes = await fetch("https://evcsms-v2-0.onrender.com/verify-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(res),
