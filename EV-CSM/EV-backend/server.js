@@ -43,7 +43,7 @@ const User = mongoose.model("User", userProfile);
 
 //  Allow your React app origin
 app.use(cors({
-  origin: "http://localhost:5173", // <-- frontend origin
+  origin: ["http://localhost:5173","https://evcsms-v2-0.vercel.app"] // <-- frontend origin
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
