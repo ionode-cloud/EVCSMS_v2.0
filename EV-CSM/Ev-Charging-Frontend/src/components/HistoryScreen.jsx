@@ -5,13 +5,11 @@ import '../App.css';
 
 const HistoryScreen = ({ setScreen, history, setHistory }) => {
 
-  // Clear history function
   const clearHistory = () => {
     setHistory([]);
     localStorage.removeItem('history');
   };
 
-  // Download single session bill
   const downloadBill = (session) => {
     const content = `
 Station: ${session.station}
@@ -25,13 +23,12 @@ Cost: ₹${session.cost.toFixed(2)}
 
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${session.station}_bill.txt`; // file name
+    link.download = `${session.station}_bill.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  //  Download all sessions together
   const downloadAllBills = () => {
     if (history.length === 0) return;
 

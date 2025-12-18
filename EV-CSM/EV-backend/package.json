@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "cashfree-pg": "^5.1.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "express": "^5.1.0",

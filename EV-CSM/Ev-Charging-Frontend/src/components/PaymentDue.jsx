@@ -1,63 +1,60 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { load } from "@cashfreepayments/cashfree-js";
 import "../App.css";
 
 const PaymentDue = ({ setScreen, sessionData, setBalance, history, setHistory }) => {
+  const [cashfree, setCashfree] = useState(null);
+
+  // Load Cashfree SDK
+  useEffect(() => {
+    async function init() {
+      const cf = await load({ mode: "sandbox" }); // change to "production" later
+      setCashfree(cf);
+    }
+    init();
+  }, []);
+
   const handlePayNow = async () => {
     try {
-      if (!sessionData?.cost || isNaN(sessionData.cost) || sessionData.cost <= 0) {
-        alert("Invalid amount for payment!");
+      if (!sessionData?.cost || sessionData.cost <= 0) {
+        alert("Invalid payment amount!");
         return;
       }
 
-      // Create Razorpay order
-      const response = await fetch("https://evcsms-v2-0.onrender.com/create-order", {
+      // Save session in localStorage before redirect
+      localStorage.setItem("currentSession", JSON.stringify(sessionData));
+
+      // Create Cashfree order on backend
+      const response = await fetch("http://localhost:38923/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: Number(sessionData.cost) }),
+        body: JSON.stringify({
+          amount: Number(sessionData.cost),
+          customerName: "EV User",
+          customerEmail: "user@example.com",
+          customerPhone: "9999999999",
+        }),
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to create order");
+      if (!data.success) {
+        alert("Order creation failed!");
+        return;
+      }
 
-      const options = {
-        key: "rzp_test_R8hZFBr7vJp0td",
-        amount: data.amount,
-        currency: data.currency,
-        name: "EV Charging Station",
-        description: "Charging Session Payment",
-        order_id: data.orderId,
-        handler: async (res) => {
-          const verifyRes = await fetch("https://evcsms-v2-0.onrender.com/verify-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(res),
-          });
-          const verifyData = await verifyRes.json();
+      const paymentSessionId = data.data.payment_session_id;
 
-          if (verifyData.success) {
-            const newHistoryItem = {
-              id: Date.now(),
-              station: sessionData.station,
-              timestamp: sessionData.timestamp,
-              energy: sessionData.energy,
-              cost: sessionData.cost,
-            };
-            setHistory([newHistoryItem, ...history]);
-            setBalance(prev => prev - sessionData.cost);
-            setScreen("payment_success");
-          } else {
-            alert(" Payment verification failed!");
-          }
-        },
-        prefill: { name: "EV User", email: "user@example.com", contact: "9999999999" },
-        theme: { color: "#2563eb" },
-      };
+      //  Open Cashfree Checkout Page
+      await cashfree.checkout({
+        paymentSessionId,
+        redirectTarget: "_self", // open in same tab
+        //  Set your return URL to PaymentSuccess route
+        returnUrl: `${window.location.origin}/?screen=payment_success`,
+      });
 
-      const rzp = new window.Razorpay(options);
-      rzp.open();
     } catch (err) {
-      console.error(" Payment error:", err);
-      alert("Payment failed! Please try again.");
+      console.error("Payment error:", err);
+      alert("Payment failed! Try again.");
     }
   };
 
@@ -67,15 +64,32 @@ const PaymentDue = ({ setScreen, sessionData, setBalance, history, setHistory })
       <p>Review your charging session</p>
 
       <div className="data-table">
-        <div className="table-row"><span>Station</span><span>{sessionData.station}</span></div>
-        <div className="table-row"><span>Power Consumed</span><span>{(sessionData.energy / 1000).toFixed(3)} kWh</span></div>
-        <div className="table-row"><span>Rate</span><span>₹ 5 / kWh</span></div>
-        <div className="table-row table-row-total"><span>Total Payable</span><span>₹ {Number(sessionData.cost).toFixed(2)}</span></div>
+        <div className="table-row">
+          <span>Station</span>
+          <span>{sessionData.station}</span>
+        </div>
+        <div className="table-row">
+          <span>Power Consumed</span>
+          <span>{(sessionData.energy / 1000).toFixed(3)} kWh</span>
+        </div>
+        <div className="table-row">
+          <span>Rate</span>
+          <span>₹ {(sessionData.cost) }</span>
+        </div>
+
+        <div className="table-row table-row-total">
+          <span>Total Payable</span>
+          <span>₹ {Number(sessionData.cost).toFixed(2)}</span>
+        </div>
       </div>
 
       <div className="button-group">
-        <button onClick={handlePayNow} className="button-primary">Pay Now</button>
-        {/* <button onClick={() => setScreen("history")} className="button-primary">View History</button> */}
+        <button onClick={handlePayNow} className="button-primary">
+          Pay Now
+        </button>
+        {/* <button onClick={() => setScreen("stations")} className="button-secondary">
+          Cancel
+        </button> */}
       </div>
     </div>
   );

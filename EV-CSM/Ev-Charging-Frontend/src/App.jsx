@@ -9,28 +9,17 @@ import HistoryScreen from './components/HistoryScreen';
 import WalletScreen from './components/WalletScreen';
 import LoginScreen from './components/LoginScreen';
 
-import { BACKEND_URL, INITIAL_BALANCE } from './data/constants';
+import { INITIAL_BALANCE } from './data/constants';
 import './App.css';
 
 const App = () => {
   const [currentScreen, setScreen] = useState('login');
-  const [isLoggedIn, setLoggedIn] = useState(false);
   const [selectedStation, setStation] = useState(null);
   const [balance, setBalance] = useState(INITIAL_BALANCE);
 
-  // Load user data from localStorage
-  const [userData, setUserData] = useState(() => {
-    const savedUser = localStorage.getItem('userData');
-    const logged = localStorage.getItem('isLoggedIn');
-    if (savedUser && logged === 'true') {
-      setLoggedIn(true);
-      setScreen('stations');
-      return JSON.parse(savedUser);
-    }
-    return null;
-  });
+  const [isLoggedIn, setLoggedIn] = useState(false);
+  const [userData, setUserData] = useState(null);
 
-  // Load history from localStorage
   const [history, setHistory] = useState(() => {
     const savedHistory = localStorage.getItem('history');
     return savedHistory ? JSON.parse(savedHistory) : [];
@@ -38,37 +27,69 @@ const App = () => {
 
   const [currentSession, setSessionData] = useState(null);
 
-  // Handle login
+  // Load login state on refresh
+  useEffect(() => {
+    const savedUser = localStorage.getItem("userData");
+    const logged = localStorage.getItem("isLoggedIn");
+
+    if (savedUser && logged === "true") {
+      setUserData(JSON.parse(savedUser));
+      setLoggedIn(true);
+      setScreen("stations");
+    }
+  }, []);
+
+  // Save history
+  useEffect(() => {
+    localStorage.setItem("history", JSON.stringify(history));
+  }, [history]);
+
+  // Handle Cashfree redirect — ONLY show payment_success IF session exists
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const query = new URLSearchParams(window.location.search);
+    const screenParam = query.get("screen");
+
+    if (screenParam === "payment_success") {
+      const session = localStorage.getItem("currentSession");
+
+      if (session) {
+        setScreen("payment_success");
+      } else {
+        // If no session → go to stations, avoid blank screen
+        setScreen("stations");
+      }
+    }
+  }, [isLoggedIn]);
+
+  //  LOGIN
   const handleLogin = (user) => {
-    // user should include _id, name, vehicleNo, mobile
     setUserData(user);
     setLoggedIn(true);
-    setScreen('stations');
+    setScreen("stations");
 
-    localStorage.setItem('userData', JSON.stringify(user));
-    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem("userData", JSON.stringify(user));
+    localStorage.setItem("isLoggedIn", "true");
   };
 
-  // Handle logout
+  //  LOGOUT
   const handleLogout = () => {
     setLoggedIn(false);
     setUserData(null);
-    localStorage.removeItem('userData');
-    localStorage.removeItem('isLoggedIn');
-    setScreen('login');
+
+    localStorage.removeItem("userData");
+    localStorage.removeItem("isLoggedIn");
+
+    setScreen("login");
   };
 
-  // Save history whenever updated
-  useEffect(() => {
-    localStorage.setItem('history', JSON.stringify(history));
-  }, [history]);
-
-  // Render screens based on currentScreen
+  // 📺 SCREEN RENDER
   const renderScreen = () => {
     if (!isLoggedIn) return <LoginScreen onLogin={handleLogin} />;
 
     switch (currentScreen) {
-      case 'stations':
+      case "stations":
         return (
           <StationSelection
             setScreen={setScreen}
@@ -76,17 +97,19 @@ const App = () => {
             userData={userData}
           />
         );
-      case 'charging':
+
+      case "charging":
         return (
           <ChargingScreen
             station={selectedStation}
             userData={userData}
             setScreen={setScreen}
-           setSessionData={setSessionData} 
+            setSessionData={setSessionData}
             currentSession={currentSession}
           />
         );
-      case 'payment_due':
+
+      case "payment_due":
         return (
           <PaymentDue
             setScreen={setScreen}
@@ -96,15 +119,19 @@ const App = () => {
             setHistory={setHistory}
           />
         );
-      case 'payment_success':
+
+      case "payment_success":
         return (
           <PaymentSuccess
             setScreen={setScreen}
-            sessionData={currentSession}
             balance={balance}
+            setBalance={setBalance}
+            history={history}
+            setHistory={setHistory}
           />
         );
-      case 'profile':
+
+      case "profile":
         return (
           <ProfileScreen
             setScreen={setScreen}
@@ -113,7 +140,8 @@ const App = () => {
             setLoggedIn={handleLogout}
           />
         );
-      case 'history':
+
+      case "history":
         return (
           <HistoryScreen
             setScreen={setScreen}
@@ -121,7 +149,8 @@ const App = () => {
             setHistory={setHistory}
           />
         );
-      case 'wallet':
+
+      case "wallet":
         return (
           <WalletScreen
             setScreen={setScreen}
@@ -129,6 +158,7 @@ const App = () => {
             setBalance={setBalance}
           />
         );
+
       default:
         return <LoginScreen onLogin={handleLogin} />;
     }
@@ -139,10 +169,12 @@ const App = () => {
       {isLoggedIn && (
         <Header currentScreen={currentScreen} setScreen={setScreen} balance={balance} />
       )}
+
       <main className="main-content">{renderScreen()}</main>
+
       {isLoggedIn && (
         <footer className="footer">
-          Made with <span>⚡</span> for EV Charging 
+          Made with Electric ⚡ for EV Charging
         </footer>
       )}
     </div>

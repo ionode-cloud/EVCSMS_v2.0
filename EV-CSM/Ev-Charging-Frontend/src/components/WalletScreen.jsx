@@ -5,7 +5,7 @@ import '../App.css';
 const WalletScreen = ({ setScreen, balance, setBalance }) => {
   const [amount, setAmount] = useState('');
 
-  // 🧠 Load balance from localStorage on mount
+  // Load balance from localStorage
   useEffect(() => {
     const savedBalance = localStorage.getItem("walletBalance");
     if (savedBalance) {
@@ -13,23 +13,28 @@ const WalletScreen = ({ setScreen, balance, setBalance }) => {
     }
   }, [setBalance]);
 
-  // 💾 Save balance to localStorage whenever it changes
+  // Save balance to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem("walletBalance", balance);
   }, [balance]);
 
+  // Only allow adding exactly 500 Rupees
   const handleAddMoney = (e) => {
     e.preventDefault();
+
     const addAmount = parseFloat(amount);
-    if (addAmount > 0) {
-      const newBalance = balance + addAmount;
-      setBalance(newBalance);
-      localStorage.setItem("walletBalance", newBalance); // save immediately
-      setAmount('');
-      alert("Money added successfully!");
-    } else {
-      alert("Please enter a valid amount!");
+
+    if (addAmount !== 500) {
+      alert("Only ₹500 is allowed!");
+      return;
     }
+
+    const newBalance = balance + 500;
+    setBalance(newBalance);
+    localStorage.setItem("walletBalance", newBalance);
+
+    setAmount('');
+    alert("₹500 added to your wallet!");
   };
 
   return (
@@ -43,6 +48,7 @@ const WalletScreen = ({ setScreen, balance, setBalance }) => {
 
         <div className="card" style={{ margin: '20px 0', padding: '20px', textAlign: 'center' }}>
           <p style={{ color: 'var(--color-text-medium)', margin: '0 0 4px 0' }}>Current Balance</p>
+
           <p style={{
             fontSize: '2.5rem',
             fontWeight: '700',
@@ -60,20 +66,20 @@ const WalletScreen = ({ setScreen, balance, setBalance }) => {
 
         <form onSubmit={handleAddMoney}>
           <div className="form-group">
-            <label htmlFor="amount">Enter amount (<RupeeIcon />)</label>
+            <label htmlFor="amount">Enter Amount (Only ₹500 allowed)</label>
             <input
               id="amount"
               type="number"
               className="input-field"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount (₹)"
+              placeholder="Enter 500"
               required
-              min="1"
             />
           </div>
 
           <div className="button-group" style={{ justifyContent: 'space-between', display: 'flex' }}>
+
             <button type="submit" className="button-primary" style={{ flexGrow: 1, marginRight: '10px' }}>
               <RupeeIcon size={18} style={{ marginRight: '6px' }} />
               Add Money
@@ -82,6 +88,7 @@ const WalletScreen = ({ setScreen, balance, setBalance }) => {
             <button type="button" className="button-primary" onClick={() => setScreen('stations')}>
               Back
             </button>
+
           </div>
         </form>
       </div>

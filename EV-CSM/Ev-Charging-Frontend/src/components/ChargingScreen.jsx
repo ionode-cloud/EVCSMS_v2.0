@@ -5,45 +5,60 @@ import "../App.css";
 const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
   const [isCharging, setIsCharging] = useState(false);
 
-  // FRONTEND default values BEFORE START
-  const [elapsedTime, setElapsedTime] = useState(0);      // sec
-  const [energyConsumed, setEnergyConsumed] = useState(0); // kWh
-  const [currentPower, setCurrentPower] = useState(0);     // kW
+  const [elapsedTime, setElapsedTime] = useState(0); 
+  const [energyConsumed, setEnergyConsumed] = useState(0); 
+  const [currentPower, setCurrentPower] = useState(0); 
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ---------------- FETCH LIVE DATA ONLY WHEN CHARGING ----------------
+  // ---------------- RESTORE STATION AFTER REFRESH ----------------
+  useEffect(() => {
+    const savedStation = localStorage.getItem("selectedStation");
+
+    if (savedStation) {
+      const s = JSON.parse(savedStation);
+
+      // safely attach fields so UI does not crash
+      station.name = s.name || "Unknown Station";
+      station.rate = s.rate || 0;
+      station.maxCapacity = s.maxCapacity || 0;
+      station.currPower = s.currPower || 0;
+      station.consPower = s.consPower || 0;
+      station.duration = s.duration || 0;
+      station.address = s.address || "N/A";
+      station._id = s._id;
+    }
+  }, [station]);
+
+  // ---------------- FETCH LIVE DATA ----------------
   const fetchStationData = async () => {
-    if (!isCharging) return; // STOP API calls before start
+    if (!isCharging) return;
 
     try {
-      const res = await fetch("https://evcsms-v2-0.onrender.com/stations");
+      const res = await fetch("http://localhost:38923/stations");
       const data = await res.json();
       const live = data.find((s) => s._id === station._id);
 
       if (!live) return;
 
-      // Fetch ONLY WHILE CHARGING
       setCurrentPower(live.currPower ?? 0);
-      setEnergyConsumed((live.consPower ?? 0) / 1000); // Wh → kWh
+      setEnergyConsumed((live.consPower ?? 0) / 1000);
       setElapsedTime(live.duration ?? 0);
     } catch (err) {
       console.error("API Fetch Error:", err);
     }
   };
 
-  // Fetch every 2 seconds ONLY WHEN CHARGING
   useEffect(() => {
     if (!isCharging) return;
 
-    fetchStationData(); // immediate call
-
+    fetchStationData();
     const interval = setInterval(fetchStationData, 2000);
     return () => clearInterval(interval);
   }, [isCharging]);
 
-  // ---------------- RESTORE ACTIVE SESSION ON REFRESH ----------------
+  // ---------------- RESTORE ACTIVE SESSION ----------------
   useEffect(() => {
     const saved = localStorage.getItem("activeCharging");
     if (!saved) return;
@@ -63,16 +78,22 @@ const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
   }, [elapsedTime]);
 
   // ---------------- COST ----------------
-  const totalCost = parseFloat((energyConsumed * station.rate).toFixed(2));
+  const totalCost = parseFloat((energyConsumed * (station?.rate ?? 0)).toFixed(2));
 
-  // ---------------- START / STOP CHARGING ----------------
+  // ---------------- START / STOP ----------------
   const handleStartStop = async () => {
     try {
       setLoading(true);
       setErrorMsg("");
 
-      // -------- STOP CHARGING ----------
+      // ---------------- STOP ----------------
       if (isCharging) {
+        await fetch(`http://localhost:38923/stations/${station._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ occupancy: false }),
+        });
+
         localStorage.removeItem("activeCharging");
 
         setSessionData({
@@ -83,8 +104,6 @@ const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
         });
 
         setIsCharging(false);
-
-        // Reset values to 0 after stop
         setEnergyConsumed(0);
         setElapsedTime(0);
         setCurrentPower(0);
@@ -93,7 +112,13 @@ const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
         return;
       }
 
-      // -------- START CHARGING ----------
+      // ---------------- START ----------------
+      await fetch(`http://localhost:38923/stations/${station._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ occupancy: true }),
+      });
+
       localStorage.setItem(
         "activeCharging",
         JSON.stringify({
@@ -103,13 +128,13 @@ const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
         })
       );
 
-      // Reset values to 0 immediately when starting
       setEnergyConsumed(0);
       setElapsedTime(0);
       setCurrentPower(0);
 
       setIsCharging(true);
     } catch (err) {
+      console.error(err);
       setErrorMsg("Something went wrong!");
     } finally {
       setLoading(false);
@@ -119,38 +144,36 @@ const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
   return (
     <div className="charging-view">
       <div className="charging-header">
-        <h2 className="charging-title">{station.name}</h2>
-        <div className="status-tag">
-          {currentPower} kW
-        </div>
+        <h2 className="charging-title">{station?.name || "Station"}</h2>
+        <div className="status-tag">{currentPower} kW</div>
       </div>
 
       <p style={{ color: "var(--color-text-medium)", marginBottom: 24 }}>
-        <MapPin size={12} /> {station.address || "N/A"}
+        <MapPin size={12} /> {station?.address || "N/A"}
       </p>
 
-      {/* ---------------- STATION DATA ---------------- */}
+      {/* ---------------- STATION INFO ---------------- */}
       <div className="charging-stats-grid card">
         <div className="stat-item">
-          <div className="stat-value">{station.maxCapacity} kW</div>
+          <div className="stat-value">{station?.maxCapacity || 0} kW</div>
           <div className="stat-label">Max Capacity</div>
         </div>
 
         <div className="stat-item">
-          <div className="stat-value">₹{station.rate}/kWh</div>
+          <div className="stat-value">₹{station?.rate || 0}/kWh</div>
           <div className="stat-label">Rate</div>
         </div>
 
         <div className="stat-item">
-          <div className="stat-value">{userData.vehicleNo}</div>
+          <div className="stat-value">{userData?.vehicleNo || "N/A"}</div>
           <div className="stat-label">Vehicle No.</div>
         </div>
       </div>
 
-      {/* ---------------- LIVE POWER & ENERGY ---------------- */}
+      {/* ---------------- POWER & ENERGY ---------------- */}
       <div className="gauge-grid">
         <div className="gauge-card card">
-          <p className="gauge-value">{station.currPower}</p>
+          <p className="gauge-value">{currentPower}</p>
           <p className="gauge-unit">kW</p>
           <p className="gauge-label">Current Power</p>
         </div>
@@ -169,16 +192,12 @@ const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
             <Clock size={16} /> Duration:{" "}
             <span className="duration-text">{formattedTime}</span>
           </span>
-
           <span className="amount-text">₹{totalCost}</span>
         </div>
       </div>
 
       {/* ---------------- START / STOP BUTTON ---------------- */}
-      <div
-        className="button-group"
-        style={{ justifyContent: "center" }}
-      >
+      <div className="button-group" style={{ justifyContent: "center" }}>
         <button
           className="button-primary"
           onClick={handleStartStop}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Zap, Plug, BatteryCharging, Gauge } from 'lucide-react';
-import { RATE_PER_KWH, BACKEND_URL } from '../data/constants';
+import { MapPin, Zap, Plug, BatteryCharging } from 'lucide-react';
+import { BACKEND_URL } from '../data/constants';
 import { RupeeIcon } from '../data/utils';
 import '../App.css';
 
@@ -9,28 +9,7 @@ const StationSelection = ({ setScreen, setStation, userData }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // -----------------------------
-  // AUTO RESUME SESSION
-  // -----------------------------
-  useEffect(() => {
-    const saved = localStorage.getItem("activeChargingSession");
-    if (!saved) return;
-
-    const session = JSON.parse(saved);
-
-    if (session.userId === userData?._id) {
-      fetch(`${BACKEND_URL}/stations/${session.stationId}`)
-        .then(res => res.json())
-        .then(station => {
-          setStation(station);
-          setScreen("charging");
-        });
-    }
-  }, []);
-
-  // -----------------------------
   // FETCH ALL STATION DATA
-  // -----------------------------
   useEffect(() => {
     const fetchStations = async () => {
       try {
@@ -50,12 +29,26 @@ const StationSelection = ({ setScreen, setStation, userData }) => {
     fetchStations();
   }, []);
 
-  // -----------------------------
   // SELECT STATION
-  // -----------------------------
   const handleUseStation = (station) => {
+    if (!station) return;
+
+    // Save for auto-resume
+    localStorage.setItem("selectedStation", JSON.stringify(station));
+
+    if (userData && userData._id) {
+      const sessionData = {
+        userId: userData._id,
+        stationId: station._id,
+        startTime: new Date().toISOString(),
+      };
+      localStorage.setItem("activeChargingSession", JSON.stringify(sessionData));
+    }
+
+    // Set selected station
     setStation(station);
-    setScreen('charging');
+    // Show charging screen temporarily
+    setScreen("charging");
   };
 
   if (loading) return <p>Loading stations...</p>;
@@ -85,7 +78,7 @@ const StationSelection = ({ setScreen, setStation, userData }) => {
           return (
             <div key={station._id} className="card station-card">
               <div className={`status-bar ${isOccupied ? 'status-occupied' : 'status-available'}`}>
-                {isMySession ? "Resume Charging" : isOccupied ? "Occupied" : "Available"}
+                {isMySession ? "Available" : isOccupied ? "Occupied" : "Available"}
               </div>
 
               <div className="station-details">
@@ -96,9 +89,6 @@ const StationSelection = ({ setScreen, setStation, userData }) => {
                   {station.address || "N/A"}
                 </p>
 
-                {/* ------------  
-                    SHOW ALL API DATA 
-                ------------- */}
                 <div className="station-info-list">
                   <div className="left-info">
                     <p><b>Max Capacity:</b> {station.maxCapacity} kWh</p>
@@ -110,7 +100,6 @@ const StationSelection = ({ setScreen, setStation, userData }) => {
                     <p><b>Connector:</b> {station.connector}</p>
                   </div>
                 </div>
-
 
                 <div className="station-features">
                   <div className="feature-item">
@@ -135,7 +124,7 @@ const StationSelection = ({ setScreen, setStation, userData }) => {
                 disabled={isOccupied}
               >
                 <BatteryCharging size={18} style={{ marginRight: '6px' }} />
-                {isMySession ? 'Resume Charging' : isOccupied ? 'Station Occupied' : 'Start Charging'}
+                {isMySession ? 'Start Charging' : isOccupied ? 'Station Occupied' : 'Start Charging'}
               </button>
             </div>
           );
