@@ -16,6 +16,7 @@
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "express": "^5.1.0",
+    "dotenv": "^17.0.0",
     "mongoose": "^8.19.3",
     "nodemon": "^3.1.10",
     "razorpay": "^2.9.6"
