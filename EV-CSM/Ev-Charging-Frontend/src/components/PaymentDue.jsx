@@ -25,7 +25,7 @@ const PaymentDue = ({ setScreen, sessionData, setBalance, history, setHistory })
       localStorage.setItem("currentSession", JSON.stringify(sessionData));
 
       // Create Cashfree order on backend
-      const response = await fetch("http://localhost:38923/create-order", {
+      const response = await fetch("https://evcsms-v2-0.onrender.com/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
