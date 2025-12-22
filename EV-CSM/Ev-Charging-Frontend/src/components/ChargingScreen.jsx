@@ -88,7 +88,7 @@ const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
 
       // ---------------- STOP ----------------
       if (isCharging) {
-        await fetch(`https://evcsms-v2-0-1.onrender.com/${station._id}`, {
+        await fetch(`https://evcsms-v2-0-1.onrender.com/stations/${station._id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ occupancy: false }),
@@ -113,7 +113,7 @@ const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
       }
 
       // ---------------- START ----------------
-      await fetch(`https://evcsms-v2-0-1.onrender.com/stations/${station._id}`, {
+      await fetch(`https://evcsms-v2-0-1.onrender.com/${station._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ occupancy: true }),
