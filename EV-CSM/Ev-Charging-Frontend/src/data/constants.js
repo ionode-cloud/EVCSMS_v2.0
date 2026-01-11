@@ -8,6 +8,6 @@ export const STATION_DATA = [
 export const INITIAL_BALANCE = 500;
 export const RATE_PER_KWH = 5;
 export const MAX_CAPACITY_W = 50000;
-export const BACKEND_URL = "https://evcsms-v2-0.onrender.com";
+export const BACKEND_URL = "https://evcms.api.ionode.cloud";
 
 
