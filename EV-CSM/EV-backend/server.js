@@ -44,7 +44,7 @@ const User = mongoose.model("User", userProfile);
 // =================== CORS for React Frontend ===================
 app.use(
   cors({
-    origin: ["http://localhost:5173","https://evcsms-v2-0-txc9.vercel.app","*"],
+    origin: ["http://localhost:5173","https://evcms.ionode.cloud","*"],
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -78,7 +78,7 @@ app.post("/create-order", async (req, res) => {
         customer_phone: customerPhone || "9999999999",
       },
       order_meta: {
-        return_url: `http://localhost:5173/payment-success`, // redirect page in frontend
+        return_url: `https://evcms.ionode.cloud/payment-success`, // redirect page in frontend
       },
     };
 

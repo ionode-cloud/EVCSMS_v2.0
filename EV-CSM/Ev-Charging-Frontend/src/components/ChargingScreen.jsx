@@ -36,7 +36,7 @@ const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
     if (!isCharging) return;
 
     try {
-      const res = await fetch("https://evcsms-v2-0.onrender.com/stations");
+      const res = await fetch("https://evcms.api.ionode.cloud/stations");
       const data = await res.json();
       const live = data.find((s) => s._id === station._id);
 
@@ -88,7 +88,7 @@ const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
 
       // ---------------- STOP ----------------
       if (isCharging) {
-        await fetch(`https://evcsms-v2-0.onrender.com/stations/${station._id}`, {
+        await fetch(`https://evcms.api.ionode.cloud/stations/${station._id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ occupancy: false }),
@@ -113,7 +113,7 @@ const ChargingScreen = ({ station, userData, setScreen, setSessionData }) => {
       }
 
       // ---------------- START ----------------
-      await fetch(`https://evcsms-v2-0.onrender.com/stations/${station._id}`, {
+      await fetch(`https://evcms.api.ionode.cloud/stations/${station._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ occupancy: true }),

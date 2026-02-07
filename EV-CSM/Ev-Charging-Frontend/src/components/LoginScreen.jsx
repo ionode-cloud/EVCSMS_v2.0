@@ -30,7 +30,7 @@ const LoginScreen = ({ onLogin }) => {
 
     try {
       // Send POST request to backend
-      const response = await fetch("https://evcsms-v2-0.onrender.com/login", {
+      const response = await fetch("https://evcms.api.ionode.cloud/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
